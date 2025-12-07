@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import karmaLogo from '../../assets/karma-logo.png';
 
 export default function Navbar(){
   return (
@@ -7,7 +8,7 @@ export default function Navbar(){
       <div className="container flex items-center justify-between h-20 py-3">
         {/* Left: Logo */}
         <Link to="/" aria-label="Karma Studios home" className="flex items-center gap-2 flex-shrink-0">
-          <img src="/src/assets/karma-logo.png" alt="logo" className="h-8 md:h-10 object-contain" />
+          <img src={karmaLogo} alt="logo" className="h-8 md:h-10 object-contain" />
           <span className="hidden sm:inline font-semibold text-lg">Karma Studios</span>
         </Link>
 
