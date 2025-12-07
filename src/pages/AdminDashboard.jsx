@@ -48,18 +48,58 @@ export default function AdminDashboard(){
   };
 
   const handleEdit = async (id) => {
-    const name = prompt('New name');
-    if (!name) return;
-    const price = prompt('New price (number)');
-    if (price === null) return;
-    await updateTile(id, { name, price: Number(price) }, token).catch(async ()=>{
-      // If server expects form-data, send as form
-      const fd = new FormData();
-      fd.append('name', name);
-      fd.append('price', price);
-      await updateTile(id, fd, token);
-    });
-    load();
+    // legacy: unused (replaced by modal-based edit)
+    return;
+  };
+
+  // Modal-based edit state & handlers
+  const [editingTile, setEditingTile] = useState(null);
+  const [editingSubmitting, setEditingSubmitting] = useState(false);
+
+  const openEdit = (tile) => {
+    setEditingTile({ ...tile });
+  };
+
+  const closeEdit = () => {
+    setEditingTile(null);
+  };
+
+  const handleEditChange = (e) => {
+    const { name, value, files } = e.target;
+    if (!editingTile) return;
+    if (name === 'image') {
+      setEditingTile({ ...editingTile, imageFile: files && files[0] });
+    } else {
+      setEditingTile({ ...editingTile, [name]: value });
+    }
+  };
+
+  const submitEdit = async (e) => {
+    e.preventDefault();
+    if (!editingTile) return;
+    setEditingSubmitting(true);
+    try {
+      const { _id, name, price, size, surface, brand, imageFile } = editingTile;
+      if (imageFile) {
+        const fd = new FormData();
+        fd.append('name', name);
+        fd.append('price', price);
+        if (size) fd.append('size', size);
+        if (surface) fd.append('surface', surface);
+        if (brand) fd.append('brand', brand);
+        fd.append('image', imageFile);
+        await updateTile(_id, fd, token);
+      } else {
+        await updateTile(_id, { name, price: Number(price), size, surface, brand }, token);
+      }
+      await load();
+      closeEdit();
+    } catch (err) {
+      console.error('submitEdit error', err);
+      alert(err?.response?.data?.message || 'Failed to update tile');
+    } finally {
+      setEditingSubmitting(false);
+    }
   };
 
   const logout = () => { localStorage.removeItem('karma_token'); nav('/'); };
@@ -120,12 +160,38 @@ export default function AdminDashboard(){
             <p className="text-sm">{t.brand} • {t.size}</p>
             <p className="font-bold">₹{t.price}</p>
             <div className="flex gap-2 mt-3">
-              <button onClick={()=>handleEdit(t._id)} className="px-2 py-1 bg-yellow-500 rounded">Edit</button>
+              <button onClick={()=>openEdit(t)} className="px-2 py-1 bg-yellow-500 rounded">Edit</button>
               <button onClick={()=>handleDelete(t._id)} className="px-2 py-1 bg-red-600 text-white rounded">Delete</button>
             </div>
           </div>
         ))}
       </div>
+
+      {/* Edit Modal */}
+      {editingTile && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-lg">
+            <h3 className="text-lg font-semibold mb-3">Edit Tile</h3>
+            <form onSubmit={submitEdit} className="flex flex-col gap-3">
+              <input name="name" value={editingTile.name || ''} onChange={handleEditChange} placeholder="Name" required className="px-3 py-2 border rounded"/>
+              <input name="price" value={editingTile.price || ''} onChange={handleEditChange} placeholder="Price (INR)" required className="px-3 py-2 border rounded"/>
+              <input name="size" value={editingTile.size || ''} onChange={handleEditChange} placeholder="Size" className="px-3 py-2 border rounded"/>
+              <input name="surface" value={editingTile.surface || ''} onChange={handleEditChange} placeholder="Surface" className="px-3 py-2 border rounded"/>
+              <input name="brand" value={editingTile.brand || ''} onChange={handleEditChange} placeholder="Brand" className="px-3 py-2 border rounded"/>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Change Image (optional)</label>
+                <input type="file" name="image" accept="image/*" onChange={handleEditChange} className="px-3 py-2 border rounded"/>
+              </div>
+              <div className="flex justify-end gap-2 mt-2">
+                <button type="button" onClick={closeEdit} className="px-3 py-2 bg-gray-200 rounded">Cancel</button>
+                <button type="submit" disabled={editingSubmitting} className={`px-3 py-2 bg-blue-600 text-white rounded ${editingSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-700'}`}>
+                  {editingSubmitting ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
