@@ -52,7 +52,7 @@ export default function AdminDashboard(){
     if (!name) return;
     const price = prompt('New price (number)');
     if (price === null) return;
-    await updateTile(id, JSON.stringify({ name, price }), token).catch(async ()=>{
+    await updateTile(id, { name, price: Number(price) }, token).catch(async ()=>{
       // If server expects form-data, send as form
       const fd = new FormData();
       fd.append('name', name);
