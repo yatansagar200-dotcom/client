@@ -70,7 +70,7 @@ export default function AdminDashboard(){
           <input name="surface" placeholder="Surface" className="px-3 py-2 border rounded"/>
           <input name="brand" placeholder="Brand" className="px-3 py-2 border rounded"/>
           <input type="file" name="image" accept="image/*" className="px-3 py-2 border rounded"/>
-          <button className="px-3 py-2 bg-green-600 text-white rounded">Add</button>
+          <button className="px-3 py-2 bg-green-600 text-white rounded transition transform active:scale-95 focus:outline-none focus:ring-2 focus:ring-green-400">Add</button>
         </form>
       </div>
 
