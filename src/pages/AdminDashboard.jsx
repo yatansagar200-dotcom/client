@@ -7,6 +7,8 @@ export default function AdminDashboard(){
   const token = localStorage.getItem('karma_token');
   const [tiles, setTiles] = useState([]);
   const [q, setQ] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [notify, setNotify] = useState({ type: '', msg: '' });
 
   useEffect(()=> {
     if(!token) nav('/admin/login');
@@ -22,9 +24,21 @@ export default function AdminDashboard(){
     e.preventDefault();
     const form = e.target;
     const fd = new FormData(form);
-    await addTile(fd, token);
-    form.reset();
-    load();
+    setSubmitting(true);
+    try {
+      await addTile(fd, token);
+      form.reset();
+      await load();
+      setNotify({ type: 'success', msg: 'Tile added successfully' });
+    } catch (err) {
+      console.error(err);
+      const message = err?.response?.data?.message || err.message || 'Failed to add tile';
+      setNotify({ type: 'error', msg: message });
+    } finally {
+      setSubmitting(false);
+      // auto-dismiss notification
+      setTimeout(() => setNotify({ type: '', msg: '' }), 3500);
+    }
   };
 
   const handleDelete = async (id) => {
@@ -63,6 +77,12 @@ export default function AdminDashboard(){
 
       <div className="card mb-4">
         <h3 className="font-semibold mb-2">Add Tile</h3>
+        {notify.msg && (
+          <div className={`mb-3 p-3 rounded ${notify.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+            {notify.msg}
+          </div>
+        )}
+
         <form onSubmit={handleAdd} className="flex gap-2 flex-wrap">
           <input name="name" placeholder="Name" required className="px-3 py-2 border rounded"/>
           <input name="price" placeholder="Price (INR)" required className="px-3 py-2 border rounded"/>
@@ -70,7 +90,23 @@ export default function AdminDashboard(){
           <input name="surface" placeholder="Surface" className="px-3 py-2 border rounded"/>
           <input name="brand" placeholder="Brand" className="px-3 py-2 border rounded"/>
           <input type="file" name="image" accept="image/*" className="px-3 py-2 border rounded"/>
-          <button className="px-3 py-2 bg-green-600 text-white rounded transition transform active:scale-95 focus:outline-none focus:ring-2 focus:ring-green-400">Add</button>
+          <button
+            type="submit"
+            disabled={submitting}
+            className={`px-3 py-2 bg-green-600 text-white rounded transition transform focus:outline-none focus:ring-2 focus:ring-green-400 flex items-center justify-center ${submitting ? 'opacity-70 cursor-not-allowed' : 'active:scale-95'}`}
+          >
+            {submitting ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                </svg>
+                Adding...
+              </>
+            ) : (
+              'Add'
+            )}
+          </button>
         </form>
       </div>
 
